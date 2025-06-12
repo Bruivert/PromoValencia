@@ -1,4 +1,4 @@
-promoters: []
+promoters: 
 - name: AEDAS
     url: https://www.aedashomes.com/promociones/valencia
     adapter: aedas
