@@ -1,35 +1,48 @@
 import requests
+import json
 
 def scrape(url):
-    promos = []
+    api_url = "https://api.aedashomes.com/api/v2/developments?filter[province.id]=2509951&page[size]=100"
+
+    headers = {
+        'User-Agent': 'Mozilla/5.0'
+    }
+
+    promociones_encontradas = []
+
     try:
-        headers = {"Content-Type": "application/json"}
-        payload = {
-            "pagination": {"page": 1, "size": 100},
-            "filters": {
-                "provinceIds": [2509951]  # ID de Valencia
-            }
-        }
+        respuesta = requests.get(api_url, headers=headers)
+        respuesta.raise_for_status()
+        datos = respuesta.json()
 
-        response = requests.post("https://api.aedashomes.com/api/product/public/search", json=payload, headers=headers, timeout=10)
-        data = response.json()
+        for promo in datos.get('data', []):
+            atributos = promo.get('attributes', {})
 
-        for item in data.get("items", []):
-            nombre = item.get("name", "")
-            ubicacion = item.get("municipality", "").lower()
-            precio = item.get("price", 0)
-            dormitorios = item.get("bedrooms", 0)
-            link = f'https://www.aedashomes.com{item.get("seoUrl", "")}'
+            nombre = atributos.get('name', 'Sin nombre')
+            zona = atributos.get('city', 'Sin zona')
+            precio_texto = atributos.get('price', '')
+            dormitorios = atributos.get('bedrooms_from', 0)
+            slug = atributos.get('slug', '')
 
-            promos.append({
-                "nombre": nombre,
-                "zona": ubicacion,
-                "precio": int(precio),
-                "dormitorios": int(dormitorios),
-                "url": link
+            precio = 0
+            if precio_texto:
+                numeros = ''.join(filter(str.isdigit, precio_texto))
+                if len(numeros) > 2 and numeros.endswith("00"):
+                    precio = int(numeros[:-2])
+                elif numeros:
+                    precio = int(numeros)
+
+            promociones_encontradas.append({
+                'promocion': nombre,
+                'zona': zona,
+                'precio': precio,
+                'dormitorios': dormitorios,
+                'url': f"https://www.aedashomes.com/promociones/{slug}"
             })
 
-    except Exception as e:
-        print("Error AEDAS:", e)
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Error conexión AEDAS: {e}")
+    except (json.JSONDecodeError, KeyError) as e:
+        print(f"❌ Error parsing AEDAS JSON: {e}")
 
-    return promos
+    return promociones_encontradas
