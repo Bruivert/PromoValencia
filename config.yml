@@ -1,5 +1,5 @@
 
 promoters:
-  - name: AEDAS
-    url: https://www.aedashomes.com/viviendas-obra-nueva?province=2509951
-    adapter: aedas
+  - nombre: AEDAS Homes
+    url: https://www.aedashomes.com
+    funcion: aedas

@@ -1,65 +1,40 @@
-import os
+
 import yaml
-import importlib
-import requests
+from adapters.aedas import raspar
 
-MIN_PRICE = 0
-MAX_PRICE = 270000
-MIN_ROOMS = 2
-ZONAS = ["valencia", "Quart de Poblet", "Manises", "Paterna", "Mislata"]
-
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
-
-def send_telegram(msg):
-    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-    data = {
-        "chat_id": TELEGRAM_CHAT_ID,
-        "text": msg,
-        "parse_mode": "HTML"
-    }
-    requests.post(url, data=data)
-
-def filtrar(promo):
-    if promo["precio"] > MAX_PRICE:
-        return False
-    if promo["dormitorios"] < MIN_ROOMS:
-        return False
-    if not any(z in promo["zona"].lower() for z in ZONAS):
-        return False
-    return True
+def cargar_configuracion():
+    with open("config.yml", "r") as archivo:
+        return yaml.safe_load(archivo)
 
 def main():
-    with open("config.yml", "r", encoding="utf-8") as f:
-        config = yaml.safe_load(f)
+    config = cargar_configuracion()
+    total_promociones = 0
+    promociones_validas = []
+    futuras_promociones = []
 
-    promociones = []
-    total_detectadas = 0
+    for promotora in config["promoters"]:
+        nombre = promotora["nombre"]
+        url = promotora["url"]
+        funcion = promotora["funcion"]
+        modulo = __import__(f"adapters.{funcion}", fromlist=["raspar"])
+        resultados = modulo.raspar(url)
 
-    for prom in config["promoters"]:
-        try:
-            adapter = importlib.import_module(f"adapters.{prom['adapter']}")
-            resultados = adapter.scrape(prom["url"])
-            total_detectadas += len(resultados)
-            for r in resultados:
-                if filtrar(r):
-                    promociones.append(r)
-        except Exception as e:
-            print(f"Error en {prom['name']}: {e}")
+        total_promociones += len(resultados)
+        for promo in resultados:
+            if promo["precio"] <= 270000 and promo["dormitorios"] >= 2:
+                promociones_validas.append(promo)
+            elif promo["precio"] == 0:
+                futuras_promociones.append(promo)
 
-    if not promociones:
-        send_telegram(f"🔍 Se analizaron {total_detectadas} promociones.\n❌ Ninguna cumple los criterios.")
-    else:
-        send_telegram(f"🔍 Se analizaron {total_detectadas} promociones.\n✅ {len(promociones)} cumplen los criterios.")
-        for p in promociones:
-            msg = (
-                f"<b>{p['nombre']}</b>\n"
-                f"Zona: {p['zona']}\n"
-                f"Precio: {p['precio']} €\n"
-                f"Dormitorios: {p['dormitorios']}\n"
-                f"<a href='{p['url']}'>Ver promoción</a>"
-            )
-            send_telegram(msg)
+    print(f"🔍 Se analizaron {total_promociones} promociones.")
+    if promociones_validas:
+        print("✅ Activas:")
+        for p in promociones_validas:
+            print(f"- {p['promocion']} ({p['zona']}): {p['precio']} € – {p['dormitorios']} dorm")
+    if futuras_promociones:
+        print("📌 Futuras:")
+        for p in futuras_promociones:
+            print(f"- {p['promocion']} ({p['zona']})")
 
 if __name__ == "__main__":
     main()
