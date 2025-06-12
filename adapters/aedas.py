@@ -1,55 +1,48 @@
 import requests
-from bs4 import BeautifulSoup
+import json
 
 def raspar(url):
+    api_url = "https://api.aedashomes.com/api/v2/developments?filter[province.id]=2509951&page[size]=100"
+
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+        'Accept': 'application/json',
+        'Referer': 'https://www.aedashomes.com/viviendas-obra-nueva?province=2509951'
     }
 
     promociones_encontradas = []
 
     try:
-        res = requests.get(url, headers=headers)
-        res.raise_for_status()
-        soup = BeautifulSoup(res.text, 'html.parser')
+        respuesta = requests.get(api_url, headers=headers)
+        respuesta.raise_for_status()
+        datos = respuesta.json()
 
-        cards = soup.select('article.card-promotion')  # Selector actualizado
+        for promo in datos.get('data', []):
+            atributos = promo.get('attributes', {})
+            nombre_promo = atributos.get('name')
+            zona_promo = atributos.get('city')
+            precio_texto = atributos.get('price', '0')
 
-        for card in cards:
-            nombre = card.select_one('.card-title').get_text(strip=True)
-            zona = card.select_one('.card-location').get_text(strip=True)
-            precio_elemento = card.select_one('.card-price')
-            precio = 0
-            if precio_elemento:
-                texto = precio_elemento.get_text()
-                numeros = ''.join(filter(str.isdigit, texto))
+            precio_final = 0
+            if precio_texto:
+                numeros = ''.join(filter(str.isdigit, precio_texto))
                 if numeros:
-                    precio = int(numeros)
-
-            dormitorios = 0
-            info_text = card.get_text()
-            if '1 dormitorio' in info_text:
-                dormitorios = 1
-            elif '2 dormitorios' in info_text:
-                dormitorios = 2
-            elif '3 dormitorios' in info_text:
-                dormitorios = 3
-            elif '4 dormitorios' in info_text:
-                dormitorios = 4
-
-            href = card.select_one('a')
-            url_promocion = f"https://www.aedashomes.com{href['href']}" if href and href.has_attr('href') else url
+                    if len(numeros) > 2 and numeros.endswith("00"):
+                        precio_final = int(numeros[:-2])
+                    else:
+                        precio_final = int(numeros)
 
             promociones_encontradas.append({
-                'promocion': nombre,
-                'zona': zona,
-                'precio': precio,
-                'dormitorios': dormitorios,
-                'url': url_promocion
+                'promocion': nombre_promo,
+                'zona': zona_promo,
+                'precio': precio_final,
+                'dormitorios': atributos.get('bedrooms_from', 0),
+                'url': f"https://www.aedashomes.com/promociones/{atributos.get('slug')}"
             })
 
+    except requests.exceptions.RequestException as e:
+        print(f"[AEDAS] Error técnico al contactar la API: {e}")
     except Exception as e:
-        print(f"[AEDAS] Error: {e}")
+        print(f"[AEDAS] Error procesando datos: {e}")
 
-    print(f"[AEDAS] Se encontraron {len(promociones_encontradas)} promociones.")
     return promociones_encontradas
