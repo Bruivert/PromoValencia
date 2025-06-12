@@ -3,43 +3,49 @@ from bs4 import BeautifulSoup
 
 def raspar(url):
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
     }
 
-    promociones = []
+    promociones_encontradas = []
 
     try:
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()
+        res = requests.get(url, headers=headers)
+        res.raise_for_status()
+        soup = BeautifulSoup(res.text, 'html.parser')
 
-        soup = BeautifulSoup(response.text, 'html.parser')
-        cards = soup.select("div.card.card-product")  # Selector CSS de promociones
-
+        cards = soup.select('.promotion-card')
         for card in cards:
-            nombre = card.select_one("h2.product-title")
-            zona = card.select_one("span.product-location")
-            precio = card.select_one("span.product-price")
-            enlace = card.select_one("a[href]")
+            nombre = card.select_one('.promotion-card__title').get_text(strip=True)
+            zona = card.select_one('.promotion-card__location').get_text(strip=True)
+            url_promocion = "https://www.aedashomes.com" + card['href'] if card.name == 'a' and card.has_attr('href') else url
 
-            nombre_texto = nombre.get_text(strip=True) if nombre else "Sin nombre"
-            zona_texto = zona.get_text(strip=True) if zona else "Sin zona"
-            precio_texto = precio.get_text(strip=True).replace(".", "").replace("€", "").replace("Desde", "").strip() if precio else "0"
-            url_texto = "https://www.aedashomes.com" + enlace['href'] if enlace else url
+            precio_elemento = card.select_one('.promotion-card__price')
+            precio = 0
+            if precio_elemento:
+                texto = precio_elemento.get_text()
+                numeros = ''.join(filter(str.isdigit, texto))
+                if numeros:
+                    precio = int(numeros)
 
-            try:
-                precio_final = int(''.join(filter(str.isdigit, precio_texto)))
-            except:
-                precio_final = 0
+            dormitorios = 0
+            if '1 dorm' in card.text:
+                dormitorios = 1
+            elif '2 dorm' in card.text:
+                dormitorios = 2
+            elif '3 dorm' in card.text:
+                dormitorios = 3
+            elif '4 dorm' in card.text:
+                dormitorios = 4
 
-            promociones.append({
-                'promocion': nombre_texto,
-                'zona': zona_texto,
-                'precio': precio_final,
-                'dormitorios': 0,
-                'url': url_texto
+            promociones_encontradas.append({
+                'promocion': nombre,
+                'zona': zona,
+                'precio': precio,
+                'dormitorios': dormitorios,
+                'url': url_promocion
             })
 
     except Exception as e:
-        print(f"[AEDAS] Error: {e}")
+        print(f"Error AEDAS: {e}")
 
-    return promociones
+    return promociones_encontradas
