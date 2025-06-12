@@ -1,13 +1,11 @@
 import requests
 import json
 
-def scrape(url):
+def raspar(url):
     api_url = "https://api.aedashomes.com/api/v2/developments?filter[province.id]=2509951&page[size]=100"
-
     headers = {
-        'User-Agent': 'Mozilla/5.0'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
     }
-
     promociones_encontradas = []
 
     try:
@@ -17,32 +15,30 @@ def scrape(url):
 
         for promo in datos.get('data', []):
             atributos = promo.get('attributes', {})
+            nombre_promo = atributos.get('name')
+            zona_promo = atributos.get('city')
+            precio_texto = atributos.get('price', '0')
 
-            nombre = atributos.get('name', 'Sin nombre')
-            zona = atributos.get('city', 'Sin zona')
-            precio_texto = atributos.get('price', '')
-            dormitorios = atributos.get('bedrooms_from', 0)
-            slug = atributos.get('slug', '')
-
-            precio = 0
+            precio_final = 0
             if precio_texto:
                 numeros = ''.join(filter(str.isdigit, precio_texto))
-                if len(numeros) > 2 and numeros.endswith("00"):
-                    precio = int(numeros[:-2])
-                elif numeros:
-                    precio = int(numeros)
+                if numeros:
+                    if len(numeros) > 2 and numeros.endswith("00"):
+                        precio_final = int(numeros[:-2])
+                    else:
+                        precio_final = int(numeros)
 
             promociones_encontradas.append({
-                'promocion': nombre,
-                'zona': zona,
-                'precio': precio,
-                'dormitorios': dormitorios,
-                'url': f"https://www.aedashomes.com/promociones/{slug}"
+                'promocion': nombre_promo,
+                'zona': zona_promo,
+                'precio': precio_final,
+                'dormitorios': atributos.get('bedrooms_from', 0),
+                'url': f"https://www.aedashomes.com/promociones/{atributos.get('slug')}"
             })
 
     except requests.exceptions.RequestException as e:
-        print(f"❌ Error conexión AEDAS: {e}")
+        print(f"Error al contactar la API de AEDAS: {e}")
     except (json.JSONDecodeError, KeyError) as e:
-        print(f"❌ Error parsing AEDAS JSON: {e}")
+        print(f"Error al procesar los datos JSON de AEDAS: {e}")
 
     return promociones_encontradas
