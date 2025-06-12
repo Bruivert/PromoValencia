@@ -1,6 +1,6 @@
 promoters:
   - name: AEDAS
-    url: https://www.aedashomes.com/promociones/valencia
+    url: https://www.aedashomes.com/viviendas-obra-nueva?province=2509951
     adapter: aedas
   - name: Metrovacesa
     url: https://www.metrovacesa.com/promociones
