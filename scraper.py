@@ -1,4 +1,3 @@
-
 import yaml
 from adapters.aedas import raspar
 
@@ -30,11 +29,12 @@ def main():
     if promociones_validas:
         print("✅ Activas:")
         for p in promociones_validas:
-            print(f"- {p['promocion']} ({p['zona']}): {p['precio']} € – {p['dormitorios']} dorm")
+            print(f"• {p['promocion']} ({p['zona']}): {p['precio']} € — {p['dormitorios']} dorm")
+
     if futuras_promociones:
         print("📌 Futuras:")
         for p in futuras_promociones:
-            print(f"- {p['promocion']} ({p['zona']})")
+            print(f"• {p['promocion']} ({p['zona']})")
 
 if __name__ == "__main__":
     main()
