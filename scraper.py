@@ -13,7 +13,7 @@ def main():
     futuras_promociones = []
 
     for promotora in config["promoters"]:
-        nombre = promotora["nombre"]
+        nombre = promotora.get("name", "SinNombre")
         url = promotora["url"]
         funcion = promotora["funcion"]
         modulo = __import__(f"adapters.{funcion}", fromlist=["raspar"])
