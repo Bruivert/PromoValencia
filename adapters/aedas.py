@@ -1,0 +1,1 @@
+# aedas adapter

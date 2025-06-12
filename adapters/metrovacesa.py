@@ -1,0 +1,1 @@
+# metrovacesa adapter
