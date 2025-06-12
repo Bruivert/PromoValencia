@@ -1,12 +1,15 @@
-
 import requests
 import json
 
 def raspar(url):
     api_url = "https://api.aedashomes.com/api/v2/developments?filter[province.id]=2509951&page[size]=100"
+
     headers = {
-        'User-Agent': 'Mozilla/5.0'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+        'Accept': 'application/json',
+        'Referer': 'https://www.aedashomes.com/viviendas-obra-nueva?province=2509951'
     }
+
     promociones_encontradas = []
 
     try:
@@ -33,6 +36,7 @@ def raspar(url):
                 'dormitorios': atributos.get('bedrooms_from', 0),
                 'url': f"https://www.aedashomes.com/promociones/{atributos.get('slug')}"
             })
+
     except Exception as e:
         print(f"Error: {e}")
     return promociones_encontradas
