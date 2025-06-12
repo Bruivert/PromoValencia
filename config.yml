@@ -1,1 +1,10 @@
 promoters: []
+- name: AEDAS
+    url: https://www.aedashomes.com/promociones/valencia
+    adapter: aedas
+  - name: Metrovacesa
+    url: https://www.metrovacesa.com/promociones
+    adapter: metrovacesa
+  - name: Aelca
+    url: https://www.aelca.es/promociones
+    adapter: aelca
