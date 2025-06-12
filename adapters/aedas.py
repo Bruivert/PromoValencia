@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 
 def raspar(url):
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
     }
 
     promociones_encontradas = []
@@ -13,35 +13,32 @@ def raspar(url):
         res.raise_for_status()
         soup = BeautifulSoup(res.text, 'html.parser')
 
-        cards = soup.select('.promotion-card')
-        print(f"[AEDAS] Se encontraron {len(cards)} tarjetas de promoción en la página.")
+        cards = soup.select('article.card-promotion')  # Selector actualizado
 
         for card in cards:
-            nombre = card.select_one('.promotion-card__title')
-            zona = card.select_one('.promotion-card__location')
-            precio_elemento = card.select_one('.promotion-card__price')
-            url_promocion = "https://www.aedashomes.com" + card['href'] if card.name == 'a' and card.has_attr('href') else ""
-
-            if not (nombre and zona and precio_elemento):
-                continue  # Saltar tarjetas incompletas
-
-            nombre = nombre.get_text(strip=True)
-            zona = zona.get_text(strip=True)
-
-            texto_precio = precio_elemento.get_text()
-            numeros = ''.join(filter(str.isdigit, texto_precio))
-            precio = int(numeros) if numeros else 0
+            nombre = card.select_one('.card-title').get_text(strip=True)
+            zona = card.select_one('.card-location').get_text(strip=True)
+            precio_elemento = card.select_one('.card-price')
+            precio = 0
+            if precio_elemento:
+                texto = precio_elemento.get_text()
+                numeros = ''.join(filter(str.isdigit, texto))
+                if numeros:
+                    precio = int(numeros)
 
             dormitorios = 0
-            card_text = card.text
-            if '1 dorm' in card_text:
+            info_text = card.get_text()
+            if '1 dormitorio' in info_text:
                 dormitorios = 1
-            elif '2 dorm' in card_text:
+            elif '2 dormitorios' in info_text:
                 dormitorios = 2
-            elif '3 dorm' in card_text:
+            elif '3 dormitorios' in info_text:
                 dormitorios = 3
-            elif '4 dorm' in card_text:
+            elif '4 dormitorios' in info_text:
                 dormitorios = 4
+
+            href = card.select_one('a')
+            url_promocion = f"https://www.aedashomes.com{href['href']}" if href and href.has_attr('href') else url
 
             promociones_encontradas.append({
                 'promocion': nombre,
@@ -51,9 +48,8 @@ def raspar(url):
                 'url': url_promocion
             })
 
-        print(f"[AEDAS] Promociones válidas encontradas: {len(promociones_encontradas)}")
-
     except Exception as e:
-        print(f"[AEDAS][ERROR] {e}")
+        print(f"[AEDAS] Error: {e}")
 
+    print(f"[AEDAS] Se encontraron {len(promociones_encontradas)} promociones.")
     return promociones_encontradas
