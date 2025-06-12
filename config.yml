@@ -1,10 +1,5 @@
+
 promoters:
   - name: AEDAS
     url: https://www.aedashomes.com/viviendas-obra-nueva?province=2509951
     adapter: aedas
-  - name: Metrovacesa
-    url: https://www.metrovacesa.com/promociones
-    adapter: metrovacesa
-  - name: Aelca
-    url: https://www.aelca.es/promociones
-    adapter: aelca
