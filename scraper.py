@@ -15,7 +15,7 @@ def main():
     for promotora in config["promoters"]:
         nombre = promotora.get("name", "SinNombre")
         url = promotora["url"]
-        funcion = promotora["funcion"]
+        funcion = promotora.get("funcion", "normal")
         modulo = __import__(f"adapters.{funcion}", fromlist=["raspar"])
         resultados = modulo.raspar(url)
 
